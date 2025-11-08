@@ -4,46 +4,56 @@
 import { useState } from "react";
 
 export default function ApiStatus() {
-  const [data, setData] = useState<any>(null);
+  const [health, setHealth] = useState<any>(null);
+  const [privateCheck, setPrivateCheck] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  async function testPrivateApi() {
+  async function testHealth() {
     setError(null);
-    setData(null);
-    setLoading(true);
+    try {
+      const res = await fetch("/api/health");
+      const data = await res.json();
+      setHealth(data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function testPrivate() {
+    setError(null);
     try {
       const res = await fetch("/api/private/check");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      setData(json);
+      const data = await res.json();
+      setPrivateCheck(data);
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   }
 
   return (
     <section className="rounded border p-4 space-y-3">
-      <h2 className="font-medium">Private API Check</h2>
-      <p className="text-sm text-gray-500">
-        Verifies that authenticated requests to <code>/api/private/check</code> succeed.
-      </p>
+      <h2 className="font-medium">API & Health Status</h2>
 
-      <button
-        onClick={testPrivateApi}
-        className="px-3 py-2 rounded border text-sm"
-        disabled={loading}
-      >
-        {loading ? "Checking..." : "Check /api/private/check"}
-      </button>
+      <div className="space-x-2">
+        <button onClick={testHealth} className="px-3 py-1 rounded border text-sm">
+          Check /api/health
+        </button>
+        <button onClick={testPrivate} className="px-3 py-1 rounded border text-sm">
+          Check /api/private/check
+        </button>
+      </div>
 
       {error && <p className="text-sm text-red-600">Error: {error}</p>}
 
-      {data && (
+      {health && (
         <pre className="text-xs bg-gray-50 p-2 rounded border overflow-auto">
-          {JSON.stringify(data, null, 2)}
+          {JSON.stringify(health, null, 2)}
+        </pre>
+      )}
+      {privateCheck && (
+        <pre className="text-xs bg-gray-50 p-2 rounded border overflow-auto">
+          {JSON.stringify(privateCheck, null, 2)}
         </pre>
       )}
     </section>

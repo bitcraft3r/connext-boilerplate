@@ -1,36 +1,25 @@
 # Connext Boilerplate
 
-A lightweight full-stack Next.js starter preconfigured with **Convex** (database) and **Clerk** (authentication).
+A minimal, production-ready boilerplate integrating **Next.js 16**, **Clerk** (authentication), and **Convex** (database).  
+It provides a preconfigured setup for auth, database, and API routes — so you can start building features instead of wiring dependencies.
 
 ---
 
-## 🚀 Overview
+## 🚀 Features
 
-**Connext Boilerplate** wires up:
-- ✅ Next.js (App Router, TypeScript)
-- ✅ Clerk (authentication and user management)
-- ✅ Convex (serverless database and backend functions)
-- ✅ Middleware-ready auth for protected routes
-- ✅ TailwindCSS (for styling)
-
-This README covers setup **up to the initial integration of Clerk and Convex**, matching the steps completed so far.
-
----
-
-## 🧩 Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-------------|----------|
-| Frontend | [Next.js](https://nextjs.org/) | React-based framework for server/client rendering |
-| Auth | [Clerk](https://clerk.com/) | Authentication and user management |
-| Database | [Convex](https://convex.dev/) | Serverless data and backend functions |
-| Styling | [Tailwind CSS](https://tailwindcss.com/) | Utility-first CSS framework |
+- 🔐 **Clerk Authentication** — fully wired with Next.js middleware and React providers.  
+- 💾 **Convex Database** — backend functions, queries, and mutations ready for use.  
+- 🔄 **Convex + Clerk Integration** — JWT template configured for secure identity sharing.  
+- 🧱 **Minimal Dashboard** — shows auth state, Convex connectivity, API checks, and environment variables.  
+- 🧭 **Protected Routes & APIs** — `/protected` route via Clerk middleware, `/api/private/check` for manual `auth()` testing.  
+- 🩺 **Health Check** — `/api/health` public endpoint for uptime verification. 
+- 🌀 **TailwindCSS**
 
 ---
 
-## 🛠️ Setup Instructions
+## ⚙️ Setup
 
-### 1. Clone and install dependencies
+### 1️⃣ Install
 
 ```bash
 git clone https://github.com/bitcraft3r/connext-boilerplate.git
@@ -38,218 +27,95 @@ cd connext-boilerplate
 pnpm install
 ```
 
-### 2. Initialize Convex
-
-Run Convex setup:
-
-```bash
-npx convex init
-```
-
-Follow the prompts to create your Convex project.  
-This generates a `/convex` folder and connects your local project to your Convex deployment.
-
-To start the local Convex dev server:
+### 2️⃣ Initialize Convex
 
 ```bash
 npx convex dev
 ```
+This creates the `/convex` directory and generates `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` in `.env.local`.
 
-This prints a development deployment URL, which you’ll add to `.env.local` later.
+### 3️⃣ Configure Clerk
 
----
+1. Create a new Clerk project at [clerk.com](https://clerk.com).  
+2. Enable **Email** and **Google** sign-in (default).  
+3. Copy your keys to `.env.local`:
 
-### 3. Set up Clerk
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+```
 
-1. Go to [Clerk Dashboard](https://dashboard.clerk.com/).  
-2. Create a **new application**.  
-3. Under **Authentication Methods**, enable **Email** and **Google** (default).  
-4. Copy the following from your Clerk project settings:
-   - **Publishable Key**
-   - **Secret Key**
+4. Create a **JWT Template** → choose **Convex** → click **Save Changes** → copy the **Issuer URL**.
 
-Add them to your `.env.local` file (see below).
-
----
-
-### 4. Create a JWT Template in Clerk
-
-1. Navigate to **JWT Templates** → **New Template**.  
-2. Choose **Convex**.  
-3. In the form:
-   - **Name:** `convex`
-   - **Issuer (iss):** your Clerk instance URL (e.g. `https://your-tenant.clerk.accounts.dev`)
-   - **Audience (aud):** `convex`
-4. Click **Save Changes**.
-5. Copy the **Issuer URL** — you’ll need it for `.env.local` and Convex.
-
----
-
-### 5. Environment Variables
-
-Create a `.env.local` file in the project root:
-
-```bash
-# Convex
-CONVEX_DEPLOYMENT=dev:your-convex-deployment-id
-NEXT_PUBLIC_CONVEX_URL=https://your-convex-url.convex.cloud
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_123
-CLERK_SECRET_KEY=sk_test_123
+```
 CLERK_JWT_ISSUER_DOMAIN=https://your-tenant.clerk.accounts.dev
 ```
 
-> Also set the **CLERK_JWT_ISSUER_DOMAIN** environment variable in your **Convex dashboard** for your active deployment.
+5. Add the same key in your Convex dashboard (Environment Variables).
 
 ---
 
-### 6. Configure Convex Auth
+## 🔗 Integrations
 
-Convex reads the Clerk JWT for authorization.  
-The following file was added automatically by Convex CLI:
+### Clerk
+- Configured via `ClerkProvider` (App layout) and `clerkMiddleware` (Edge runtime).  
+- Protects `/protected` routes automatically.  
+- Uses `auth()` in server routes for identity access.  
 
-`convex/auth.config.ts`
-```ts
-import { AuthConfig } from "convex/server";
+### Convex
+- Integrated with `ConvexProviderWithClerk` for client auth context.  
+- Contains sample queries (`hello`) and mutations (`ping`).  
+- Includes a user provisioning mutation (`ensureUser`) linked to Clerk’s user data.
 
-export default {
-  providers: [
-    {
-      domain: process.env.CLERK_JWT_ISSUER_DOMAIN!,
-      applicationID: "convex",
-    },
-  ],
-} satisfies AuthConfig;
-```
-
-This tells Convex to trust JWTs issued by Clerk for your deployment.
+### Next.js
+- Uses the **App Router** (`src/app`) and modular client/server components.  
+- `middleware.ts` handles auth at the edge; `/api` routes demonstrate protected and public APIs.  
 
 ---
 
-### 7. Add the Clerk + Convex Providers
+## 🗂️ Project Structure
 
-Clerk and Convex need to wrap your app in React context providers.  
-Following both official guides:
-
-- [Convex Auth with Clerk (Next.js)](https://docs.convex.dev/auth/clerk#nextjs)
-- [Clerk → Convex Integration Guide](https://clerk.com/docs/guides/development/integrations/databases/convex#configure-the-clerk-and-convex-providers)
-
-#### `/src/components/ConvexClientProvider.tsx`
-```tsx
-"use client";
-
-import { ReactNode } from 'react'
-import { ConvexReactClient } from 'convex/react'
-import { ConvexProviderWithClerk } from 'convex/react-clerk'
-import { useAuth } from '@clerk/nextjs'
-
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-  throw new Error('Missing NEXT_PUBLIC_CONVEX_URL in your .env file')
-}
-
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL)
-
-export default function ConvexClientProvider({ children }: { children: ReactNode }) {
-  return (
-    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-      {children}
-    </ConvexProviderWithClerk>
-  )
-}
 ```
-
-#### `/src/app/layout.tsx`
-```tsx
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
-import ConvexClientProvider from "@/components/ConvexClientProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Connext Boilerplate",
-  description: "Lightweight full-stack Next.js starter with Convex and Clerk",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClerkProvider>
-          <ConvexClientProvider>
-            {children}
-          </ConvexClientProvider>
-        </ClerkProvider>
-      </body>
-    </html>
-  );
-}
+src/
+  app/
+    page.tsx               # Dashboard (server component)
+    protected/             # Example protected route
+    api/
+      health/route.ts      # Public health endpoint
+      private/check/route.ts # Protected API with manual auth() check
+  components/              # Reusable UI & provider components
+  middleware.ts            # Clerk edge middleware
+convex/
+  schema.ts                # Convex DB schema
+  users.ts                 # ensureUser + me queries
+  queries.ts, mutations.ts # hello + ping examples
+.env.example               # Template for environment variables
 ```
 
 ---
 
-### 8. Add Clerk Middleware
+## 🧭 Development Workflow
 
-`/src/middleware.ts`
-```ts
-import { clerkMiddleware } from '@clerk/nextjs/server';
+Run both Next.js and Convex locally:
 
-export default clerkMiddleware();
-
-export const config = {
-  matcher: [
-    '/((?!_next|[^?]*\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)',
-  ],
-};
-```
-
-This middleware initializes Clerk on every request and enables auth on API routes.  
-Protected routes can later be configured using `createRouteMatcher` if needed.
-
----
-
-### 9. Run the Project
-
-In one terminal, start Convex:
 ```bash
 npx convex dev
-```
-
-In another terminal, start Next.js:
-```bash
 pnpm dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+Visit:
 
-You should now be able to sign in with Clerk and your Convex functions will authenticate using Clerk-issued JWTs.
-
----
-
-## ✅ Next Steps
-
-- Add Convex queries and mutations (`/convex/queries.ts`, `/convex/mutations.ts`).
-- Build a simple “Integration Dashboard” homepage to verify Clerk + Convex connectivity.
-- Commit these initial files and push to GitHub.
-- Prepare for deployment (Vercel + Convex Cloud).
+- `/` → Dashboard with live integration checks  
+- `/protected` → Middleware-protected page  
+- `/api/health` → Public JSON response  
+- `/api/private/check` → Returns `401` if signed out, or user info if signed in
 
 ---
 
-### 📄 License
-MIT
+## ☁️ Deployment
+
+Deploy easily on **Vercel** (Next.js) and **Convex Cloud**:
+
+1. Add all environment variables in your Vercel project settings.  
+2. Ensure the Convex deployment matches the URL in `NEXT_PUBLIC_CONVEX_URL`.  
+3. Update Clerk allowed origins to include your deployed domain.  
